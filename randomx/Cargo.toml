@@ -1,0 +1,12 @@
+[package]
+name = "randomx"
+version = "0.1.0"
+authors = ["Lee Bousfield <ljbousfield@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+randomx-sys = { path = "../randomx-sys" }
+thiserror = "1.0.22"
+
+[dev-dependencies]
+hex = "0.4.2"

@@ -1,0 +1,6 @@
+[submodule "RandomX"]
+	path = randomx-sys/RandomX
+	url = https://github.com/tevador/RandomX.git
+[submodule "mc_randomx"]
+	path = randomx-sys/mc_randomx
+	url = git@github.com:MerosCrypto/mc_randomx.git
