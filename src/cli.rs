@@ -27,7 +27,7 @@ pub struct Opts {
     /// Disadvantage: stops mining for a few seconds every other day.
     /// But mining would only progress on the old key anyways, which would be useless.
     /// This is a target for future improvement.
-    #[structopt(short = "k", long="randomx-stop-for-rekey")]
+    #[structopt(short = "k", long = "randomx-stop-for-rekey")]
     pub randomx_stop_for_rekey: bool,
 }
 
