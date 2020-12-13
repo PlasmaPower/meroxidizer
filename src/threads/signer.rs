@@ -1,4 +1,4 @@
-use super::{rpc_manager::RpcInfo, HASH_CHAN_BATCH_SIZE};
+use super::{rpc_manager::RpcInfo, HASH_CHAN_BATCH_SIZE, PartialHashBatch};
 use crate::bls::SIG_SIZE;
 use crossbeam_channel::{Receiver, Sender};
 use randomx::HASH_SIZE;
@@ -6,19 +6,22 @@ use std::sync::Arc;
 
 fn run(
     rpc_info: Arc<RpcInfo>,
-    input: Receiver<[(usize, u32, [u8; HASH_SIZE]); HASH_CHAN_BATCH_SIZE]>,
-    output: Sender<[(usize, u32, [u8; HASH_SIZE + SIG_SIZE]); HASH_CHAN_BATCH_SIZE]>,
+    inputs: Receiver<PartialHashBatch<[u8; HASH_SIZE]>>,
+    outputs: Sender<PartialHashBatch<[u8; HASH_SIZE + SIG_SIZE]>>,
 ) {
-    for items in input {
-        let mut out = [(0, 0, [0u8; HASH_SIZE + SIG_SIZE]); HASH_CHAN_BATCH_SIZE];
-        for (item_in, item_out) in items.iter().zip(out.iter_mut()) {
+    for input in inputs {
+        let mut out = PartialHashBatch {
+            seq: input.seq,
+            height: input.height,
+            items: [(0, [0; HASH_SIZE + SIG_SIZE]); HASH_CHAN_BATCH_SIZE],
+        };
+        for (item_in, item_out) in input.items.iter().zip(out.items.iter_mut()) {
             item_out.0 = item_in.0;
-            item_out.1 = item_in.1;
-            item_out.2[..HASH_SIZE].copy_from_slice(&item_in.2);
-            let sig = rpc_info.miner_key.sign(&item_in.2);
-            item_out.2[HASH_SIZE..].copy_from_slice(&sig);
+            item_out.1[..HASH_SIZE].copy_from_slice(&item_in.1);
+            let sig = rpc_info.miner_key.sign(&item_in.1);
+            item_out.1[HASH_SIZE..].copy_from_slice(&sig);
         }
-        if output.send(out).is_err() {
+        if outputs.send(out).is_err() {
             return;
         }
     }
@@ -26,8 +29,8 @@ fn run(
 
 pub fn start(
     rpc_info: Arc<RpcInfo>,
-    input: Receiver<[(usize, u32, [u8; HASH_SIZE]); HASH_CHAN_BATCH_SIZE]>,
-    output: Sender<[(usize, u32, [u8; HASH_SIZE + SIG_SIZE]); HASH_CHAN_BATCH_SIZE]>,
+    inputs: Receiver<PartialHashBatch<[u8; HASH_SIZE]>>,
+    outputs: Sender<PartialHashBatch<[u8; HASH_SIZE + SIG_SIZE]>>,
 ) {
-    std::thread::spawn(|| run(rpc_info, input, output));
+    std::thread::spawn(|| run(rpc_info, inputs, outputs));
 }

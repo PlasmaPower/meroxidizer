@@ -11,6 +11,12 @@ mod signer;
 const HASH_CHAN_BATCH_SIZE: usize = 64;
 const HASH_CHAN_CAPACITY: usize = 2;
 
+pub struct PartialHashBatch<T> {
+    pub seq: usize,
+    pub height: usize,
+    pub items: [(u32, T); HASH_CHAN_BATCH_SIZE],
+}
+
 pub fn start(opts: Opts) -> JoinHandle<()> {
     if opts.bls_threads == 0 || opts.randomx_threads == 0 || opts.randomx_init_threads == 0 {
         eprintln!("You must specify a positive number of each thread type");

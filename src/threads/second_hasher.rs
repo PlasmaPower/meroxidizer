@@ -1,4 +1,4 @@
-use super::{rpc_manager::RpcInfo, HASH_CHAN_BATCH_SIZE};
+use super::{rpc_manager::RpcInfo, PartialHashBatch};
 use crate::bls::SIG_SIZE;
 use crossbeam_channel::Receiver;
 use log::trace;
@@ -23,7 +23,7 @@ fn less_than_rev(a: &[u8; 32], b: &[u8; 32]) -> bool {
 
 fn run(
     rpc_info: Arc<RpcInfo>,
-    inputs_chan: Receiver<[(usize, u32, [u8; HASH_SIZE + SIG_SIZE]); HASH_CHAN_BATCH_SIZE]>,
+    inputs_chan: Receiver<PartialHashBatch<[u8; HASH_SIZE + SIG_SIZE]>>,
 ) {
     let mut template = rpc_info.latest_template.read().clone();
     let mut vm = Vm::new(template.randomx_cache.clone()).expect("Failed to create RandomX VM");
@@ -32,15 +32,18 @@ fn run(
             Ok(x) => x,
             Err(_) => return,
         };
-        let mut hash_chain = HashChain::new(&mut vm, &inputs[0].2);
-        let mut prev_input = inputs[0];
+        if inputs.height < template.height {
+            continue;
+        }
+        let mut prev_input = inputs.items[0];
+        let mut hash_chain = HashChain::new(&mut vm, &prev_input.1);
         trace!("second_hasher loaded template with seq {}", template.seq);
-        for input in inputs[1..].iter() {
-            let out = hash_chain.next(&input.2);
+        for input in inputs.items[1..].iter() {
+            let out = hash_chain.next(&input.1);
             if less_than_rev(&out, &template.max_hash) {
                 let mut sig = [0u8; SIG_SIZE];
-                sig.copy_from_slice(&prev_input.2[HASH_SIZE..]);
-                let data = (prev_input.0, prev_input.1, sig, out);
+                sig.copy_from_slice(&prev_input.1[HASH_SIZE..]);
+                let data = (inputs.seq, prev_input.0, sig, out);
                 if let Err(_) = rpc_info.publish_channel.send(data) {
                     return;
                 }
@@ -50,8 +53,8 @@ fn run(
         let out = hash_chain.last();
         if less_than_rev(&out, &template.max_hash) {
             let mut sig = [0u8; SIG_SIZE];
-            sig.copy_from_slice(&prev_input.2[HASH_SIZE..]);
-            let data = (prev_input.0, prev_input.1, sig, out);
+            sig.copy_from_slice(&prev_input.1[HASH_SIZE..]);
+            let data = (inputs.seq, prev_input.0, sig, out);
             if let Err(_) = rpc_info.publish_channel.send(data) {
                 return;
             }
@@ -72,7 +75,7 @@ fn run(
 
 pub fn start(
     rpc_info: Arc<RpcInfo>,
-    input: Receiver<[(usize, u32, [u8; HASH_SIZE + SIG_SIZE]); HASH_CHAN_BATCH_SIZE]>,
+    inputs_chan: Receiver<PartialHashBatch<[u8; HASH_SIZE + SIG_SIZE]>>,
 ) {
-    std::thread::spawn(|| run(rpc_info, input));
+    std::thread::spawn(|| run(rpc_info, inputs_chan));
 }

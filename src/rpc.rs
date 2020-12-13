@@ -25,6 +25,8 @@ impl fmt::Display for RpcError {
     }
 }
 
+impl std::error::Error for RpcError {}
+
 #[derive(Serialize)]
 struct FullRequest<'a, P> {
     #[serde(rename = "jsonrpc")]
@@ -111,6 +113,22 @@ impl Rpc {
             match FullResponse::<R>::deserialize(&mut rpc.reader)? {
                 FullResponse::Error { error, .. } => Ok(Err(error)),
                 FullResponse::Result { result, .. } => Ok(Ok(result)),
+            }
+        })
+    }
+
+    pub fn get_height(&mut self) -> usize {
+        let req = FullRequest {
+            json_rpc: "2.0",
+            method: "merit_getHeight",
+            id: 0,
+            params: [(); 0],
+        };
+        self.with_retry(|rpc| {
+            serde_json::to_writer(&mut rpc.writer, &req)?;
+            match FullResponse::deserialize(&mut rpc.reader)? {
+                FullResponse::Error { error, .. } => Err(error.into()),
+                FullResponse::Result { result, .. } => Ok(result),
             }
         })
     }

@@ -26,6 +26,7 @@ pub struct BlockTemplate {
     pub header: Vec<u8>,
     pub randomx_cache: Arc<Cache>,
     pub max_hash: [u8; 32],
+    pub height: usize,
     id: i64,
 }
 
@@ -39,7 +40,7 @@ pub struct RpcInfo {
     pub num_hashes_rec: AtomicUsize,
 }
 
-const GET_TEMPLATE_INTERVAL: Duration = Duration::from_secs(2);
+const GET_TEMPLATE_INTERVAL: Duration = Duration::from_secs(1);
 const RETAIN_SEQS: usize = 5;
 
 pub fn start(opts: Opts) -> (Arc<RpcInfo>, JoinHandle<()>) {
@@ -61,6 +62,7 @@ pub fn start(opts: Opts) -> (Arc<RpcInfo>, JoinHandle<()>) {
     };
     let miner_key = SecretKey::new(&miner_key).expect("Invalid miner key specified");
     let miner_pubkey = hex::encode_upper(miner_key.get_public_key());
+    let height = rpc.get_height();
     let target = rpc.get_mining_target(&miner_pubkey);
     info!("loaded miner public key {}", miner_pubkey);
 
@@ -79,6 +81,7 @@ pub fn start(opts: Opts) -> (Arc<RpcInfo>, JoinHandle<()>) {
         header: target.header,
         randomx_cache: Arc::new(cache),
         max_hash: difficulty_to_max_hash(target.difficulty),
+        height,
         id: target.id,
     });
     debug!(
@@ -128,6 +131,11 @@ pub fn start(opts: Opts) -> (Arc<RpcInfo>, JoinHandle<()>) {
             Err(RecvTimeoutError::Timeout) => {}
             Err(RecvTimeoutError::Disconnected) => return,
         }
+        let height = rpc.get_height();
+        if height > last_template.height {
+            recent_seqs.clear();
+            seqs_to_templates.clear();
+        }
         let target = rpc.get_mining_target(&miner_pubkey);
         last_seq += 1;
         let mut template = BlockTemplate {
@@ -135,6 +143,7 @@ pub fn start(opts: Opts) -> (Arc<RpcInfo>, JoinHandle<()>) {
             header: target.header,
             randomx_cache: last_template.randomx_cache.clone(),
             max_hash: difficulty_to_max_hash(target.difficulty),
+            height,
             id: target.id,
         };
         debug!(
