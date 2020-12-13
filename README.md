@@ -9,6 +9,8 @@ git submodule update --init
 
 Install rust via https://rustup.rs/
 
+You'll also need to install Clang
+
 ### To run once
 
 ```

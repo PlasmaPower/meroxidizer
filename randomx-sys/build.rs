@@ -9,6 +9,9 @@ fn main() {
         .join("RandomX")
         .join("src")
         .join("configuration.h");
+    if !config_src.exists() || !config_dst.exists() {
+        panic!("RandomX configuration doesn't exist. Did you checkout the git submodules?")
+    }
     std::fs::copy(config_src, config_dst).unwrap();
 
     let dst = cmake::Config::new("RandomX")
