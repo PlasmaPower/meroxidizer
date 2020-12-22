@@ -36,6 +36,7 @@ struct FullRequest<'a, P> {
     params: P,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum FullResponse<R> {
@@ -43,10 +44,12 @@ enum FullResponse<R> {
     Result { id: i64, result: R },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct RpcMiningTarget {
     pub id: i64,
+    #[serde(with = "hex")]
     pub key: [u8; 32],
+    #[serde(with = "hex")]
     pub header: Vec<u8>,
     pub difficulty: u64,
 }
@@ -134,72 +137,17 @@ impl Rpc {
     }
 
     pub fn get_mining_target(&mut self, miner_pubkey: &str) -> RpcMiningTarget {
-        let req1 = FullRequest {
-            json_rpc: "2.0",
-            id: 0,
-            method: "merit_getDifficulty",
-            params: [(); 0],
-        };
-        let req2 = FullRequest {
+        let req = FullRequest {
             json_rpc: "2.0",
             id: 1,
             method: "merit_getBlockTemplate",
             params: [miner_pubkey],
         };
-        #[derive(Deserialize)]
-        struct RpcBlockTemplate {
-            id: i64,
-            key: String,
-            header: String,
-        }
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum Response {
-            Difficulty(String),
-            BlockTemplate(RpcBlockTemplate),
-        }
         self.with_retry(|rpc| {
-            serde_json::to_writer(&mut rpc.writer, &req1)?;
-            serde_json::to_writer(&mut rpc.writer, &req2)?;
-            let mut difficulty = None;
-            let mut template = None;
-            for _ in 0..2 {
-                match FullResponse::<Response>::deserialize(&mut rpc.reader)? {
-                    FullResponse::Error { error, .. } => {
-                        eyre::bail!("Got error from RPC: {:?}", error)
-                    }
-                    FullResponse::Result { result, id } => match result {
-                        Response::Difficulty(s) => {
-                            eyre::ensure!(
-                                id == 0,
-                                "Got difficulty RPC response with wrong ID {}",
-                                id
-                            );
-                            difficulty = Some(u64::from_str_radix(&s, 16)?);
-                        }
-                        Response::BlockTemplate(t) => {
-                            eyre::ensure!(
-                                id == 1,
-                                "Got template RPC response with wrong ID {}",
-                                id
-                            );
-                            template = Some(t);
-                        }
-                    },
-                }
-            }
-            match (difficulty, template) {
-                (Some(difficulty), Some(template)) => {
-                    let mut key = [0u8; 32];
-                    hex::decode_to_slice(&template.key, &mut key)?;
-                    Ok(RpcMiningTarget {
-                        id: template.id,
-                        key,
-                        header: hex::decode(template.header)?,
-                        difficulty,
-                    })
-                }
-                _ => eyre::bail!("Got wrong combo of RPC responses for difficulty and template"),
+            serde_json::to_writer(&mut rpc.writer, &req)?;
+            match FullResponse::deserialize(&mut rpc.reader)? {
+                FullResponse::Error { error, .. } => Err(error.into()),
+                FullResponse::Result { result, .. } => Ok(result)
             }
         })
     }
