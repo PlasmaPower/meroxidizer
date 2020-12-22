@@ -1,4 +1,4 @@
-use super::{rpc_manager::RpcInfo, HASH_CHAN_BATCH_SIZE, PartialHashBatch};
+use super::{rpc_manager::RpcInfo, PartialHashBatch, HASH_CHAN_BATCH_SIZE};
 use crate::bls::SIG_SIZE;
 use crossbeam_channel::{Receiver, Sender};
 use randomx::HASH_SIZE;

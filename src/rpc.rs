@@ -147,7 +147,7 @@ impl Rpc {
             serde_json::to_writer(&mut rpc.writer, &req)?;
             match FullResponse::deserialize(&mut rpc.reader)? {
                 FullResponse::Error { error, .. } => Err(error.into()),
-                FullResponse::Result { result, .. } => Ok(result)
+                FullResponse::Result { result, .. } => Ok(result),
             }
         })
     }

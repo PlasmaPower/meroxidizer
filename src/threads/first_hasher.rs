@@ -1,14 +1,14 @@
-use super::{HASH_CHAN_BATCH_SIZE, PartialHashBatch, rpc_manager::{Nonce, RpcInfo}};
+use super::{
+    rpc_manager::{Nonce, RpcInfo},
+    PartialHashBatch, HASH_CHAN_BATCH_SIZE,
+};
 use crossbeam_channel::Sender;
 use log::trace;
 use rand::{thread_rng, Rng};
 use randomx::{HashChain, Vm, HASH_SIZE};
 use std::sync::{atomic, Arc};
 
-fn run(
-    rpc_info: Arc<RpcInfo>,
-    output: Sender<PartialHashBatch<[u8; HASH_SIZE]>>,
-) {
+fn run(rpc_info: Arc<RpcInfo>, output: Sender<PartialHashBatch<[u8; HASH_SIZE]>>) {
     let mut template = rpc_info.latest_template.read().clone();
     let mut vm = Vm::new(template.randomx_cache.clone()).expect("Failed to create RandomX VM");
     loop {
@@ -16,7 +16,7 @@ fn run(
         let mut batch = PartialHashBatch {
             seq: template.seq,
             height: template.height,
-            items: [(0, [0; HASH_SIZE]); HASH_CHAN_BATCH_SIZE]
+            items: [(0, [0; HASH_SIZE]); HASH_CHAN_BATCH_SIZE],
         };
         let mut input = template.header.clone();
         let mut nonce: Nonce = thread_rng().gen();
@@ -44,9 +44,6 @@ fn run(
     }
 }
 
-pub fn start(
-    rpc_info: Arc<RpcInfo>,
-    output: Sender<PartialHashBatch<[u8; HASH_SIZE]>>,
-) {
+pub fn start(rpc_info: Arc<RpcInfo>, output: Sender<PartialHashBatch<[u8; HASH_SIZE]>>) {
     std::thread::spawn(|| run(rpc_info, output));
 }
