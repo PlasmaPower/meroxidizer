@@ -22,7 +22,6 @@ fn main() {
 
     println!("cargo:rustc-link-search=native={}/build", dst.display());
     println!("cargo:rustc-link-lib=static=randomx");
-    println!("cargo:rustc-link-lib=stdc++");
     println!("cargo:rerun-if-changed=RandomX/src/randomx.h");
     println!("cargo:rerun-if-changed=mc_randomx/MerosConfiguration/configuration.h");
 
