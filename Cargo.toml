@@ -3,7 +3,7 @@ name = "meroxidizer"
 version = "0.1.0"
 authors = ["Lee Bousfield <ljbousfield@gmail.com>"]
 edition = "2018"
-repository = "https://github.com/PlasmaPower/meroxidizer/"
+repository = "https://github.com/MerosCrypto/meroxidizer/"
 license = "BSD-3-Clause"
 
 [workspace]
