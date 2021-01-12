@@ -30,7 +30,7 @@ fn run(rpc_info: Arc<RpcInfo>, output: Sender<PartialHashBatch<[u8; HASH_SIZE]>>
             *out = (prev_nonce, prev_hash);
         }
         batch.items[batch.items.len() - 1] = (nonce, hash_chain.last());
-        if let Err(_) = output.send(batch) {
+        if output.send(batch).is_err() {
             return;
         }
         if rpc_info.latest_seq.load(atomic::Ordering::Relaxed) > template.seq {

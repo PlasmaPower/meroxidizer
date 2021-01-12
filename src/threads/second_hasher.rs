@@ -44,7 +44,7 @@ fn run(
                 let mut sig = [0u8; SIG_SIZE];
                 sig.copy_from_slice(&prev_input.1[HASH_SIZE..]);
                 let data = (inputs.seq, prev_input.0, sig, out);
-                if let Err(_) = rpc_info.publish_channel.send(data) {
+                if rpc_info.publish_channel.send(data).is_err() {
                     return;
                 }
             }
@@ -55,7 +55,7 @@ fn run(
             let mut sig = [0u8; SIG_SIZE];
             sig.copy_from_slice(&prev_input.1[HASH_SIZE..]);
             let data = (inputs.seq, prev_input.0, sig, out);
-            if let Err(_) = rpc_info.publish_channel.send(data) {
+            if rpc_info.publish_channel.send(data).is_err() {
                 return;
             }
         }

@@ -107,7 +107,7 @@ impl Rpc {
     ) -> Result<R, RpcError> {
         let req = FullRequest {
             json_rpc: "2.0",
-            method: method,
+            method,
             id: 0,
             params,
         };

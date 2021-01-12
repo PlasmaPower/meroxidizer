@@ -122,7 +122,7 @@ pub fn start(opts: Opts) -> (Arc<RpcInfo>, JoinHandle<()>) {
                         Err(err) => warn!("failed to publish block :( error: {}", err),
                     }
                     // Empty publish channel as previous blocks aren't useful
-                    while let Ok(_) = publish_recv.try_recv() {}
+                    while publish_recv.try_recv().is_ok() {}
                 } else {
                     warn!("found block with expired seq :(");
                     continue;
