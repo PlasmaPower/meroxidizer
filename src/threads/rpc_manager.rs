@@ -61,7 +61,8 @@ pub fn start(opts: Opts) -> (Arc<RpcInfo>, JoinHandle<()>) {
         }
     };
     let miner_key = SecretKey::new(&miner_key).expect("Invalid miner key specified");
-    let miner_pubkey = hex::encode_upper(miner_key.get_public_key());
+    // TODO: remove reference and cast once we update our minimum rust version enough
+    let miner_pubkey = hex::encode_upper(&miner_key.get_public_key() as &[u8]);
     let height = rpc.get_height();
     let target = rpc.get_mining_target(&miner_pubkey);
     info!("loaded miner public key {}", miner_pubkey);
@@ -112,7 +113,8 @@ pub fn start(opts: Opts) -> (Arc<RpcInfo>, JoinHandle<()>) {
                     info!("found block! hash: {}", hex::encode_upper(hash));
                     let mut contents = template.header.clone();
                     contents.extend(&nonce.to_le_bytes());
-                    contents.extend(&signature);
+                    // TODO: remove cast once we update our minimum rust version enough
+                    contents.extend(&signature as &[u8]);
                     let params = (template.id, hex::encode_upper(contents));
                     debug!("attempting to publish block with params {:?}", params);
                     let res: Result<bool, _> = rpc.single_request("merit_publishBlock", params);

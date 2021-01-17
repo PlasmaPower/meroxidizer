@@ -23,7 +23,8 @@ impl SecretKey {
         trace!(
             "signing {} -> {}",
             hex::encode_upper(msg),
-            hex::encode_upper(sig)
+            // TODO: remove cast once we update our minimum rust version enough
+            hex::encode_upper(&sig as &[u8])
         );
         sig
     }

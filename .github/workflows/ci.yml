@@ -13,8 +13,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
-          # seems to be necessary to preserve metadata such as last modified time
-          fetch-depth: 0
 
       - name: Install stable toolchain
         id: install-toolchain
@@ -46,20 +44,23 @@ jobs:
   test:
     name: Tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - 1.43.0
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
         with:
           submodules: true
-          # seems to be necessary to preserve metadata such as last modified time
-          fetch-depth: 0
 
       - name: Install stable toolchain
         id: install-toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          toolchain: ${{ matrix.rust }}
           override: true
 
       - name: Cargo cache
